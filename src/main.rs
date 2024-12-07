@@ -1,6 +1,61 @@
-use core::panic;
 use std::env;
+use std::fmt::Display;
 use std::fs;
+
+#[allow(non_camel_case_types)]
+#[derive(Debug)]
+enum TokenType {
+    LEFT_PAREN,
+    RIGHT_PAREN,
+    LEFT_BRACE,
+    RIGHT_BRACE,
+}
+
+struct Token {
+    ty: TokenType,
+    lexer: String,
+    literal: Option<String>,
+}
+
+impl Token {
+    fn parse_char(lexer: char) -> Option<Self> {
+        match lexer {
+            '(' => Some(Token {
+                ty: TokenType::LEFT_PAREN,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            ')' => Some(Token {
+                ty: TokenType::RIGHT_PAREN,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            '{' => Some(Token {
+                ty: TokenType::LEFT_BRACE,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            '}' => Some(Token {
+                ty: TokenType::RIGHT_BRACE,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            _ => None,
+        }
+    }
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{:?} {} {}",
+            self.ty,
+            self.lexer,
+            self.literal.clone().unwrap_or("null".to_owned())
+        )
+    }
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -14,28 +69,19 @@ fn main() {
 
     match command.as_str() {
         "tokenize" => {
-            let file_contents = fs::read_to_string(filename).unwrap_or_else(|_| {
-                eprintln!("Failed to read file {}", filename);
-                String::new()
-            });
+            let file_contents = fs::read_to_string(filename).unwrap_or_default();
 
-            if !file_contents.is_empty() {
-                parse(file_contents)
-            } else {
-                println!("EOF  null");
-            }
+            scan(file_contents)
         }
-        _ => {
-            eprintln!("Unknown command: {}", command);
-        }
+        _ => eprintln!("Unknown command: {command}"),
     }
 }
 
-fn parse(contents: String) {
-    contents.chars().for_each(|ch| match ch {
-        '(' => println!("LEFT_PAREN ( null"),
-        ')' => println!("RIGHT_PAREN ) null"),
-        any => panic!("Cannot parse the '{any}' token"),
+fn scan(contents: String) {
+    contents.chars().map(Token::parse_char).for_each(|t| {
+        if let Some(t) = t {
+            println!("{t}");
+        };
     });
     println!("EOF  null");
 }
