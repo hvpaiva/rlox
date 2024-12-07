@@ -64,12 +64,8 @@ impl Token {
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         if self.ty == TokenType::NUMBER {
-            let parsed: f64 = self.literal.clone().unwrap().parse().unwrap();
-            let formated = format!("{:.1}", parsed)
-                .trim_end_matches('0')
-                .trim_end_matches('.')
-                .to_string()
-                + if parsed.fract() == 0.0 { ".0" } else { "" };
+            let parsed = self.literal.clone().unwrap();
+            let formated = format_to_float_output(&parsed);
 
             write!(f, "{:?} {} {}", self.ty, self.lexer, formated)
         } else {
@@ -81,5 +77,20 @@ impl Display for Token {
                 self.literal.clone().unwrap_or("null".to_owned())
             )
         }
+    }
+}
+
+fn format_to_float_output(input: &str) -> String {
+    let parsed: f64 = input
+        .parse()
+        .expect("Invalid input: could not parse to float");
+    if parsed.fract() == 0.0 {
+        format!("{:.1}", parsed)
+    } else {
+        parsed
+            .to_string()
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
     }
 }
