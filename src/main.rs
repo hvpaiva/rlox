@@ -2,13 +2,19 @@ use std::env;
 use std::fmt::Display;
 use std::fs;
 
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, clippy::upper_case_acronyms)]
 #[derive(Debug)]
 enum TokenType {
     LEFT_PAREN,
     RIGHT_PAREN,
     LEFT_BRACE,
     RIGHT_BRACE,
+    DOT,
+    STAR,
+    PLUS,
+    MINUS,
+    COMMA,
+    SEMICOLON,
 }
 
 struct Token {
@@ -37,6 +43,36 @@ impl Token {
             }),
             '}' => Some(Token {
                 ty: TokenType::RIGHT_BRACE,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            '.' => Some(Token {
+                ty: TokenType::DOT,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            '*' => Some(Token {
+                ty: TokenType::STAR,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            ',' => Some(Token {
+                ty: TokenType::COMMA,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            '+' => Some(Token {
+                ty: TokenType::PLUS,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            '-' => Some(Token {
+                ty: TokenType::MINUS,
+                lexer: lexer.to_string(),
+                literal: None,
+            }),
+            ';' => Some(Token {
+                ty: TokenType::SEMICOLON,
                 lexer: lexer.to_string(),
                 literal: None,
             }),
