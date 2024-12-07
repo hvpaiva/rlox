@@ -14,10 +14,10 @@ pub enum TokenType {
     MINUS,
     COMMA,
     SEMICOLON,
-
     EQUAL,
     EQUAL_EQUAL,
-
+    BANG,
+    BANG_EQUAL,
     EOF,
 }
 

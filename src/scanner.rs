@@ -74,6 +74,14 @@ impl Scanner {
                     }
                 }
 
+                '!' => {
+                    if self.match_next('=') {
+                        tokens.push(Token::new(TokenType::BANG_EQUAL, "!=", self.line));
+                    } else {
+                        tokens.push(Token::new(TokenType::BANG, "!", self.line));
+                    }
+                }
+
                 '\n' => {
                     self.line += 1;
                 }
