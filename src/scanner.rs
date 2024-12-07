@@ -98,6 +98,16 @@ impl Scanner {
                     }
                 }
 
+                '/' => {
+                    if self.match_next('/') {
+                        while self.peek() != '\n' && !self.is_at_end() {
+                            self.advance();
+                        }
+                    } else {
+                        tokens.push(Token::new(TokenType::SLASH, "/", self.line));
+                    }
+                }
+
                 '\n' => {
                     self.line += 1;
                 }
