@@ -82,6 +82,22 @@ impl Scanner {
                     }
                 }
 
+                '<' => {
+                    if self.match_next('=') {
+                        tokens.push(Token::new(TokenType::LESS_EQUAL, "<=", self.line));
+                    } else {
+                        tokens.push(Token::new(TokenType::LESS, "<", self.line));
+                    }
+                }
+
+                '>' => {
+                    if self.match_next('=') {
+                        tokens.push(Token::new(TokenType::GREATER_EQUAL, ">=", self.line));
+                    } else {
+                        tokens.push(Token::new(TokenType::GREATER, ">", self.line));
+                    }
+                }
+
                 '\n' => {
                     self.line += 1;
                 }
