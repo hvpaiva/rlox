@@ -23,25 +23,31 @@ pub enum TokenType {
     GREATER,
     GREATER_EQUAL,
     SLASH,
+    STRING,
     EOF,
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct Token {
     pub ty: TokenType,
     pub lexer: String,
     pub literal: Option<String>,
-    pub line: usize,
 }
 
 impl Token {
-    pub fn new(ty: TokenType, lexer: &str, line: usize) -> Self {
+    pub fn new(ty: TokenType, lexer: &str) -> Self {
         Self {
             ty,
             lexer: lexer.to_string(),
             literal: None,
-            line,
+        }
+    }
+
+    pub fn new_with_literal(ty: TokenType, literal: String) -> Self {
+        Self {
+            ty,
+            lexer: format!("\"{literal}\""),
+            literal: Some(literal),
         }
     }
 }

@@ -55,46 +55,46 @@ impl Scanner {
         while !self.is_at_end() {
             let c = self.advance();
             match c {
-                '(' => tokens.push(Token::new(TokenType::LEFT_PAREN, "(", self.line)),
-                ')' => tokens.push(Token::new(TokenType::RIGHT_PAREN, ")", self.line)),
-                '{' => tokens.push(Token::new(TokenType::LEFT_BRACE, "{", self.line)),
-                '}' => tokens.push(Token::new(TokenType::RIGHT_BRACE, "}", self.line)),
-                '.' => tokens.push(Token::new(TokenType::DOT, ".", self.line)),
-                ',' => tokens.push(Token::new(TokenType::COMMA, ",", self.line)),
-                '*' => tokens.push(Token::new(TokenType::STAR, "*", self.line)),
-                '+' => tokens.push(Token::new(TokenType::PLUS, "+", self.line)),
-                '-' => tokens.push(Token::new(TokenType::MINUS, "-", self.line)),
-                ';' => tokens.push(Token::new(TokenType::SEMICOLON, ";", self.line)),
+                '(' => tokens.push(Token::new(TokenType::LEFT_PAREN, "(")),
+                ')' => tokens.push(Token::new(TokenType::RIGHT_PAREN, ")")),
+                '{' => tokens.push(Token::new(TokenType::LEFT_BRACE, "{")),
+                '}' => tokens.push(Token::new(TokenType::RIGHT_BRACE, "}")),
+                '.' => tokens.push(Token::new(TokenType::DOT, ".")),
+                ',' => tokens.push(Token::new(TokenType::COMMA, ",")),
+                '*' => tokens.push(Token::new(TokenType::STAR, "*")),
+                '+' => tokens.push(Token::new(TokenType::PLUS, "+")),
+                '-' => tokens.push(Token::new(TokenType::MINUS, "-")),
+                ';' => tokens.push(Token::new(TokenType::SEMICOLON, ";")),
 
                 '=' => {
                     if self.match_next('=') {
-                        tokens.push(Token::new(TokenType::EQUAL_EQUAL, "==", self.line));
+                        tokens.push(Token::new(TokenType::EQUAL_EQUAL, "=="));
                     } else {
-                        tokens.push(Token::new(TokenType::EQUAL, "=", self.line));
+                        tokens.push(Token::new(TokenType::EQUAL, "="));
                     }
                 }
 
                 '!' => {
                     if self.match_next('=') {
-                        tokens.push(Token::new(TokenType::BANG_EQUAL, "!=", self.line));
+                        tokens.push(Token::new(TokenType::BANG_EQUAL, "!="));
                     } else {
-                        tokens.push(Token::new(TokenType::BANG, "!", self.line));
+                        tokens.push(Token::new(TokenType::BANG, "!"));
                     }
                 }
 
                 '<' => {
                     if self.match_next('=') {
-                        tokens.push(Token::new(TokenType::LESS_EQUAL, "<=", self.line));
+                        tokens.push(Token::new(TokenType::LESS_EQUAL, "<="));
                     } else {
-                        tokens.push(Token::new(TokenType::LESS, "<", self.line));
+                        tokens.push(Token::new(TokenType::LESS, "<"));
                     }
                 }
 
                 '>' => {
                     if self.match_next('=') {
-                        tokens.push(Token::new(TokenType::GREATER_EQUAL, ">=", self.line));
+                        tokens.push(Token::new(TokenType::GREATER_EQUAL, ">="));
                     } else {
-                        tokens.push(Token::new(TokenType::GREATER, ">", self.line));
+                        tokens.push(Token::new(TokenType::GREATER, ">"));
                     }
                 }
 
@@ -104,8 +104,31 @@ impl Scanner {
                             self.advance();
                         }
                     } else {
-                        tokens.push(Token::new(TokenType::SLASH, "/", self.line));
+                        tokens.push(Token::new(TokenType::SLASH, "/"));
                     }
+                }
+
+                '"' => {
+                    let start = self.current;
+                    while self.peek() != '"' && !self.is_at_end() {
+                        if self.peek() == '\n' {
+                            self.line += 1;
+                        }
+                        self.advance();
+                    }
+
+                    if self.is_at_end() {
+                        print_err(self.line, "Unterminated string.");
+                        self.had_error = true;
+                        continue;
+                    }
+
+                    self.advance();
+                    let literal = self.source[start..self.current - 1]
+                        .iter()
+                        .collect::<String>();
+
+                    tokens.push(Token::new_with_literal(TokenType::STRING, literal));
                 }
 
                 '\n' => {
@@ -117,13 +140,17 @@ impl Scanner {
                 }
 
                 ch => {
-                    eprintln!("[line {}] Error: Unexpected character: {}", self.line, ch);
+                    print_err(self.line, &format!("Unexpected character: {}", ch));
                     self.had_error = true;
                 }
             }
         }
 
-        tokens.push(Token::new(TokenType::EOF, "", self.line));
+        tokens.push(Token::new(TokenType::EOF, ""));
         tokens
     }
+}
+
+fn print_err(line: usize, message: &str) {
+    eprintln!("[line {}] Error: {}", line, message);
 }
