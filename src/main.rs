@@ -1,3 +1,4 @@
+use core::panic;
 use std::env;
 use std::fs;
 
@@ -34,6 +35,7 @@ fn parse(contents: String) {
     contents.chars().for_each(|ch| match ch {
         '(' => println!("LEFT_PAREN ( null"),
         ')' => println!("RIGHT_PAREN ) null"),
-        _ => println!("EOF null"),
+        any => panic!("Cannot parse the '{any}' token"),
     });
+    println!("EOF  null");
 }
