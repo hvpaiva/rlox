@@ -1,6 +1,7 @@
 use std::env;
 use std::fmt::Display;
 use std::fs;
+use std::process::exit;
 
 #[allow(non_camel_case_types, clippy::upper_case_acronyms)]
 #[derive(Debug)]
@@ -17,66 +18,37 @@ enum TokenType {
     SEMICOLON,
 }
 
+#[allow(dead_code)]
 struct Token {
     ty: TokenType,
     lexer: String,
     literal: Option<String>,
+    line: usize,
 }
 
 impl Token {
-    fn parse_char(lexer: char) -> Option<Self> {
+    fn new(lexer: char, ty: TokenType, line: usize) -> Self {
+        Self {
+            ty,
+            lexer: lexer.to_string(),
+            literal: None,
+            line,
+        }
+    }
+
+    fn parse_char(lexer: char, line: usize) -> Result<Self, String> {
         match lexer {
-            '(' => Some(Token {
-                ty: TokenType::LEFT_PAREN,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            ')' => Some(Token {
-                ty: TokenType::RIGHT_PAREN,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            '{' => Some(Token {
-                ty: TokenType::LEFT_BRACE,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            '}' => Some(Token {
-                ty: TokenType::RIGHT_BRACE,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            '.' => Some(Token {
-                ty: TokenType::DOT,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            '*' => Some(Token {
-                ty: TokenType::STAR,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            ',' => Some(Token {
-                ty: TokenType::COMMA,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            '+' => Some(Token {
-                ty: TokenType::PLUS,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            '-' => Some(Token {
-                ty: TokenType::MINUS,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            ';' => Some(Token {
-                ty: TokenType::SEMICOLON,
-                lexer: lexer.to_string(),
-                literal: None,
-            }),
-            _ => None,
+            '(' => Ok(Token::new(lexer, TokenType::LEFT_PAREN, line)),
+            ')' => Ok(Token::new(lexer, TokenType::RIGHT_PAREN, line)),
+            '{' => Ok(Token::new(lexer, TokenType::LEFT_BRACE, line)),
+            '}' => Ok(Token::new(lexer, TokenType::RIGHT_BRACE, line)),
+            '.' => Ok(Token::new(lexer, TokenType::DOT, line)),
+            ',' => Ok(Token::new(lexer, TokenType::COMMA, line)),
+            '*' => Ok(Token::new(lexer, TokenType::STAR, line)),
+            '+' => Ok(Token::new(lexer, TokenType::PLUS, line)),
+            '-' => Ok(Token::new(lexer, TokenType::MINUS, line)),
+            ';' => Ok(Token::new(lexer, TokenType::SEMICOLON, line)),
+            ch => Err(format!("[line {line}] Error: Unexpected character: {ch}")),
         }
     }
 }
@@ -114,10 +86,19 @@ fn main() {
 }
 
 fn scan(contents: String) {
-    contents.chars().map(Token::parse_char).for_each(|t| {
-        if let Some(t) = t {
-            println!("{t}");
-        };
-    });
+    let mut result = 0;
+    for (i, line) in contents.lines().enumerate() {
+        line.chars()
+            .map(|s| Token::parse_char(s, i + 1))
+            .for_each(|t| {
+                if let Ok(token) = t {
+                    println!("{}", token);
+                } else if let Err(e) = t {
+                    eprintln!("{}", e);
+                    result = 65;
+                }
+            });
+    }
     println!("EOF  null");
+    exit(result);
 }
