@@ -2,7 +2,7 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
 #[allow(non_camel_case_types, clippy::upper_case_acronyms)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TokenType {
     LEFT_PAREN,
     RIGHT_PAREN,
@@ -24,6 +24,7 @@ pub enum TokenType {
     GREATER_EQUAL,
     SLASH,
     STRING,
+    NUMBER,
     EOF,
 }
 
@@ -44,22 +45,41 @@ impl Token {
     }
 
     pub fn new_with_literal(ty: TokenType, literal: String) -> Self {
-        Self {
-            ty,
-            lexer: format!("\"{literal}\""),
-            literal: Some(literal),
+        if ty == TokenType::NUMBER {
+            Self {
+                ty,
+                lexer: literal.clone(),
+                literal: Some(literal),
+            }
+        } else {
+            Self {
+                ty,
+                lexer: format!("\"{literal}\""),
+                literal: Some(literal),
+            }
         }
     }
 }
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        write!(
-            f,
-            "{:?} {} {}",
-            self.ty,
-            self.lexer,
-            self.literal.clone().unwrap_or("null".to_owned())
-        )
+        if self.ty == TokenType::NUMBER {
+            let parsed: f64 = self.literal.clone().unwrap().parse().unwrap();
+            let formated = format!("{:.1}", parsed)
+                .trim_end_matches('0')
+                .trim_end_matches('.')
+                .to_string()
+                + if parsed.fract() == 0.0 { ".0" } else { "" };
+
+            write!(f, "{:?} {} {}", self.ty, self.lexer, formated)
+        } else {
+            write!(
+                f,
+                "{:?} {} {}",
+                self.ty,
+                self.lexer,
+                self.literal.clone().unwrap_or("null".to_owned())
+            )
+        }
     }
 }

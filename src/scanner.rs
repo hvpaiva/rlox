@@ -40,6 +40,14 @@ impl Scanner {
         }
     }
 
+    fn peek_next(&self) -> char {
+        if self.current + 1 >= self.source.len() {
+            '\0'
+        } else {
+            self.source[self.current + 1]
+        }
+    }
+
     fn match_next(&mut self, expected: char) -> bool {
         if self.is_at_end() || self.source[self.current] != expected {
             false
@@ -129,6 +137,24 @@ impl Scanner {
                         .collect::<String>();
 
                     tokens.push(Token::new_with_literal(TokenType::STRING, literal));
+                }
+
+                c if c.is_ascii_digit() => {
+                    let start = self.current - 1;
+                    while self.peek().is_ascii_digit() {
+                        self.advance();
+                    }
+
+                    if self.peek() == '.' && self.peek_next().is_ascii_digit() {
+                        self.advance();
+                        while self.peek().is_ascii_digit() {
+                            self.advance();
+                        }
+                    }
+
+                    let literal = self.source[start..self.current].iter().collect::<String>();
+
+                    tokens.push(Token::new_with_literal(TokenType::NUMBER, literal));
                 }
 
                 '\n' => {
