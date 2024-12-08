@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
+use crate::formatter::format_number;
+
 use super::keyword::Keyword;
 
 #[allow(non_camel_case_types, clippy::upper_case_acronyms)]
@@ -126,13 +128,5 @@ impl Display for Literal {
             Literal::Number(n) => write!(f, "{}", format_number(*n)),
             Literal::None => write!(f, "null"),
         }
-    }
-}
-
-fn format_number(value: f64) -> String {
-    if value == value.trunc() {
-        format!("{:.1}", value)
-    } else {
-        format!("{}", value)
     }
 }

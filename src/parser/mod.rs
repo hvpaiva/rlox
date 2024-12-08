@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use crate::{
+    formatter::format_number,
     report::Reporter,
     scanner::{Keyword, Literal as TokenLiteral, Token, TokenType},
     Process,
@@ -39,7 +40,7 @@ impl Display for Literal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Literal::Boolean(b) => write!(f, "{}", b),
-            Literal::Number(n) => write!(f, "{}", n),
+            Literal::Number(n) => write!(f, "{}", format_number(*n)),
             Literal::String(s) => write!(f, "{}", s),
             Literal::None => write!(f, "nil"),
         }
