@@ -23,7 +23,7 @@ impl Display for Expr {
             }
             Expr::Unary(unary) => write!(f, "{}{}", unary.operator, unary.right),
             Expr::Literal(literal) => write!(f, "{}", literal),
-            Expr::Grouping(expr) => write!(f, "({})", expr),
+            Expr::Grouping(expr) => write!(f, "(group {})", expr),
         }
     }
 }
