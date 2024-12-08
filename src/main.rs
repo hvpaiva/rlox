@@ -33,10 +33,13 @@ fn main() {
             exit(scanner.exit_code());
         }
         "parse" => {
-            let mut parser = parser::Parser::new();
             let mut scanner = Scanner::new();
-
             let tokens = scanner.run(file_contents);
+
+            if scanner.had_error() {
+                exit(scanner.exit_code());
+            }
+            let mut parser = parser::Parser::new();
 
             if let Some(ast) = parser.run(tokens) {
                 println!("{}", ast);

@@ -278,10 +278,11 @@ impl Parser {
             let expr = self.expression()?;
             if self.match_ty(&TokenType::RIGHT_PAREN) {
                 return Some(Expr::Grouping(Box::new(expr)));
-            } else {
-                self.report("Expected ')' after expression.");
             }
+            self.report("Expected ')' after expression.");
         }
+
+        self.report("Expected expression.");
 
         None
     }
@@ -330,7 +331,6 @@ impl Process for Parser {
 
     fn run(&mut self, input: Self::Input) -> Self::Output {
         self.tokens = input;
-        self.current = 0;
         let expr = self.expression();
         self.reporter.print();
         expr
