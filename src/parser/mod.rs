@@ -21,7 +21,7 @@ impl Display for Expr {
             Expr::Binary(binary) => {
                 write!(f, "{} {} {}", binary.left, binary.operator, binary.right)
             }
-            Expr::Unary(unary) => write!(f, "{}{}", unary.operator, unary.right),
+            Expr::Unary(unary) => write!(f, "({} {})", unary.operator, unary.right),
             Expr::Literal(literal) => write!(f, "{}", literal),
             Expr::Grouping(expr) => write!(f, "(group {})", expr),
         }
@@ -50,13 +50,13 @@ impl Display for Literal {
 #[derive(Debug)]
 pub struct Binary {
     left: Box<Expr>,
-    operator: Token,
+    operator: Operator,
     right: Box<Expr>,
 }
 
 #[derive(Debug)]
 pub struct Unary {
-    operator: Token,
+    operator: Operator,
     right: Box<Expr>,
 }
 
@@ -64,6 +64,61 @@ pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
     reporter: Reporter,
+}
+
+#[derive(Debug)]
+pub enum Operator {
+    EqualEqual,
+    Equal,
+    Bang,
+    BangEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    Plus,
+    Minus,
+    Star,
+    Slash,
+}
+
+impl Operator {
+    fn from_token(token: &Token) -> Option<Self> {
+        match token.ty {
+            TokenType::EQUAL => Some(Self::Equal),
+            TokenType::EQUAL_EQUAL => Some(Self::EqualEqual),
+            TokenType::BANG => Some(Self::Bang),
+            TokenType::BANG_EQUAL => Some(Self::BangEqual),
+            TokenType::LESS => Some(Self::Less),
+            TokenType::LESS_EQUAL => Some(Self::LessEqual),
+            TokenType::GREATER => Some(Self::Greater),
+            TokenType::GREATER_EQUAL => Some(Self::GreaterEqual),
+            TokenType::PLUS => Some(Self::Plus),
+            TokenType::MINUS => Some(Self::Minus),
+            TokenType::STAR => Some(Self::Star),
+            TokenType::SLASH => Some(Self::Slash),
+            _ => None,
+        }
+    }
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Operator::Equal => write!(f, "="),
+            Operator::EqualEqual => write!(f, "=="),
+            Operator::Bang => write!(f, "!"),
+            Operator::BangEqual => write!(f, "!="),
+            Operator::Less => write!(f, "<"),
+            Operator::LessEqual => write!(f, "<="),
+            Operator::Greater => write!(f, ">"),
+            Operator::GreaterEqual => write!(f, "<="),
+            Operator::Plus => write!(f, "+"),
+            Operator::Minus => write!(f, "-"),
+            Operator::Star => write!(f, "*"),
+            Operator::Slash => write!(f, "/"),
+        }
+    }
 }
 
 impl Parser {
@@ -78,7 +133,7 @@ impl Parser {
     fn make_binary_expr(left: Option<Expr>, operator: Token, right: Expr) -> Option<Expr> {
         Some(Expr::Binary(Box::new(Binary {
             left: Box::new(left?),
-            operator,
+            operator: Operator::from_token(&operator)?,
             right: Box::new(right),
         })))
     }
@@ -184,7 +239,7 @@ impl Parser {
             let operator = self.previous().clone();
             let right = self.unary()?;
             return Some(Expr::Unary(Box::new(Unary {
-                operator,
+                operator: Operator::from_token(&operator)?,
                 right: Box::new(right),
             })));
         }
