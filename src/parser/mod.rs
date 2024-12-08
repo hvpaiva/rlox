@@ -112,7 +112,7 @@ impl Display for Operator {
             Operator::Less => write!(f, "<"),
             Operator::LessEqual => write!(f, "<="),
             Operator::Greater => write!(f, ">"),
-            Operator::GreaterEqual => write!(f, "<="),
+            Operator::GreaterEqual => write!(f, ">="),
             Operator::Plus => write!(f, "+"),
             Operator::Minus => write!(f, "-"),
             Operator::Star => write!(f, "*"),
