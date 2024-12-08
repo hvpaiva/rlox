@@ -107,7 +107,7 @@ impl Display for TokenType {
             TokenType::STRING(_) => write!(f, "STRING"),
             TokenType::NUMBER(_) => write!(f, "NUMBER"),
             TokenType::IDENTIFIER(_) => write!(f, "IDENTIFIER"),
-            TokenType::KEYWORD(_) => write!(f, "KEYWORD"),
+            TokenType::KEYWORD(key) => write!(f, "{:?}", key),
             ty => write!(f, "{:?}", ty),
         }
     }
