@@ -4,6 +4,7 @@ use std::process::exit;
 
 use scanner::Scanner;
 
+mod keyword;
 mod scanner;
 mod token;
 

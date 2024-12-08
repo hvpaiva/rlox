@@ -1,6 +1,8 @@
 // token.rs
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
+use crate::keyword::Keyword;
+
 #[allow(non_camel_case_types, clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TokenType {
@@ -23,8 +25,10 @@ pub enum TokenType {
     GREATER,
     GREATER_EQUAL,
     SLASH,
-    STRING,
-    NUMBER,
+    STRING(String),
+    NUMBER(String),
+    IDENTIFIER(String),
+    KEYWORD(Keyword),
     EOF,
 }
 
@@ -32,65 +36,97 @@ pub enum TokenType {
 pub struct Token {
     pub ty: TokenType,
     pub lexer: String,
-    pub literal: Option<String>,
+    pub literal: Literal,
+}
+
+#[derive(Debug, Clone)]
+pub enum Literal {
+    String(String),
+    Number(f64),
+    None,
 }
 
 impl Token {
-    pub fn new(ty: TokenType, lexer: &str) -> Self {
+    pub fn new(ty: TokenType) -> Self {
         Self {
-            ty,
-            lexer: lexer.to_string(),
-            literal: None,
+            ty: ty.clone(),
+            lexer: ty.to_lexer(),
+            literal: ty.to_literal(),
+        }
+    }
+}
+
+impl TokenType {
+    pub fn to_lexer(&self) -> String {
+        match self {
+            TokenType::LEFT_PAREN => "(".to_string(),
+            TokenType::RIGHT_PAREN => ")".to_string(),
+            TokenType::LEFT_BRACE => "{".to_string(),
+            TokenType::RIGHT_BRACE => "}".to_string(),
+            TokenType::DOT => ".".to_string(),
+            TokenType::STAR => "*".to_string(),
+            TokenType::PLUS => "+".to_string(),
+            TokenType::MINUS => "-".to_string(),
+            TokenType::COMMA => ",".to_string(),
+            TokenType::SEMICOLON => ";".to_string(),
+            TokenType::EQUAL => "=".to_string(),
+            TokenType::EQUAL_EQUAL => "==".to_string(),
+            TokenType::BANG => "!".to_string(),
+            TokenType::BANG_EQUAL => "!=".to_string(),
+            TokenType::LESS => "<".to_string(),
+            TokenType::LESS_EQUAL => "<=".to_string(),
+            TokenType::GREATER => ">".to_string(),
+            TokenType::GREATER_EQUAL => ">=".to_string(),
+            TokenType::SLASH => "/".to_string(),
+            TokenType::STRING(lexer) => lexer.to_string(),
+            TokenType::NUMBER(lexer) => lexer.to_string(),
+            TokenType::IDENTIFIER(lexer) => lexer.to_string(),
+            TokenType::KEYWORD(keyword) => keyword.to_raw_string(),
+            TokenType::EOF => "".to_string(),
         }
     }
 
-    pub fn new_with_literal(ty: TokenType, literal: String) -> Self {
-        if ty == TokenType::NUMBER {
-            Self {
-                ty,
-                lexer: literal.clone(),
-                literal: Some(literal),
-            }
-        } else {
-            Self {
-                ty,
-                lexer: format!("\"{literal}\""),
-                literal: Some(literal),
-            }
+    pub fn to_literal(&self) -> Literal {
+        match self {
+            TokenType::STRING(lexer) => Literal::String(lexer.trim_matches('\"').to_string()),
+            TokenType::NUMBER(lexer) => Literal::Number(lexer.parse().unwrap()),
+            _ => Literal::None,
         }
     }
 }
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        if self.ty == TokenType::NUMBER {
-            let parsed = self.literal.clone().unwrap();
-            let formated = format_to_float_output(&parsed);
+        write!(f, "{} {} {}", self.ty, self.lexer, self.literal)
+    }
+}
 
-            write!(f, "{:?} {} {}", self.ty, self.lexer, formated)
-        } else {
-            write!(
-                f,
-                "{:?} {} {}",
-                self.ty,
-                self.lexer,
-                self.literal.clone().unwrap_or("null".to_owned())
-            )
+impl Display for TokenType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            TokenType::STRING(_) => write!(f, "STRING"),
+            TokenType::NUMBER(_) => write!(f, "NUMBER"),
+            TokenType::IDENTIFIER(_) => write!(f, "IDENTIFIER"),
+            TokenType::KEYWORD(_) => write!(f, "KEYWORD"),
+            ty => write!(f, "{:?}", ty),
         }
     }
 }
 
-fn format_to_float_output(input: &str) -> String {
-    let parsed: f64 = input
-        .parse()
-        .expect("Invalid input: could not parse to float");
-    if parsed.fract() == 0.0 {
-        format!("{:.1}", parsed)
+impl Display for Literal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            Literal::String(s) => write!(f, "{}", s),
+            Literal::Number(n) => write!(f, "{}", format_number(n)),
+            Literal::None => write!(f, "null"),
+        }
+    }
+}
+
+fn format_number(value: &f64) -> String {
+    if *value == value.trunc() {
+        format!("{:.1}", value)
     } else {
-        parsed
-            .to_string()
-            .trim_end_matches('0')
-            .trim_end_matches('.')
-            .to_string()
+        format!("{}", value)
     }
 }
