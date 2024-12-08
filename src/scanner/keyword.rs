@@ -42,8 +42,25 @@ static KEYWORDS: phf::Map<&'static str, Keyword> = phf_map! {
 };
 
 impl Keyword {
-    pub fn to_raw_string(&self) -> String {
-        format!("{}", self).to_lowercase()
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Keyword::AND => "and",
+            Keyword::CLASS => "class",
+            Keyword::ELSE => "else",
+            Keyword::FALSE => "false",
+            Keyword::FOR => "for",
+            Keyword::FUN => "fun",
+            Keyword::IF => "if",
+            Keyword::NIL => "nil",
+            Keyword::OR => "or",
+            Keyword::PRINT => "print",
+            Keyword::RETURN => "return",
+            Keyword::SUPER => "super",
+            Keyword::THIS => "this",
+            Keyword::TRUE => "true",
+            Keyword::VAR => "var",
+            Keyword::WHILE => "while",
+        }
     }
 
     pub fn from(lexeme: &str) -> Option<Keyword> {
