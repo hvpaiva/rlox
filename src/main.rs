@@ -1,6 +1,9 @@
 use std::env;
 use std::fs;
+use std::panic;
+use std::process;
 use std::process::exit;
+use std::sync::Arc;
 
 use scanner::Scanner;
 
@@ -11,6 +14,13 @@ mod report;
 mod scanner;
 
 fn main() {
+    let default_hook = Arc::new(panic::take_hook());
+    let hook = Arc::clone(&default_hook);
+    panic::set_hook(Box::new(move |panic_info| {
+        hook(panic_info);
+        process::exit(70);
+    }));
+
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("Usage: {} tokenize <filename>", args[0]);
@@ -58,7 +68,7 @@ fn main() {
             let mut parser = parser::Parser::new();
             let mut evaluator = evaluator::Evaluator::new();
             if let Some(ast) = parser.run(tokens) {
-                let result = evaluator.run(ast);
+                let result = evaluator.evaluate(ast);
 
                 println!("{}", result);
             }
@@ -66,8 +76,6 @@ fn main() {
             if parser.had_error() {
                 exit(parser.exit_code());
             }
-
-            exit(evaluator.exit_code());
         }
         _ => eprintln!("Unknown command: {command}"),
     }

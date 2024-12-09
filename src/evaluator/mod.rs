@@ -1,23 +1,16 @@
+use core::panic;
 use std::{cmp::Ordering, fmt::Display};
 
-use crate::{
-    parser::{Binary, Expr, Literal, Operator, Unary},
-    report::Reporter,
-    Process,
-};
+use crate::parser::{Binary, Expr, Literal, Operator, Unary};
 
-pub struct Evaluator {
-    reporter: Reporter,
-}
+pub struct Evaluator {}
 
 impl Evaluator {
     pub fn new() -> Self {
-        Self {
-            reporter: Reporter::new(),
-        }
+        Self {}
     }
 
-    fn evaluate(&mut self, expr: Expr) -> Value {
+    pub fn evaluate(&mut self, expr: Expr) -> Value {
         match expr {
             Expr::Binary(binary) => self.evaluate_binary(*binary),
             Expr::Unary(unary) => self.evaluate_unary(*unary),
@@ -43,37 +36,22 @@ impl Evaluator {
             Operator::LessEqual => Value::Boolean(left <= right),
             Operator::Minus => match (left, right) {
                 (Value::Number(l), Value::Number(r)) => Value::Number(l - r),
-                _ => {
-                    // self.reporter.error("Operands must be numbers", &operator);
-                    Value::Nil
-                }
+                _ => panic!("Operands must be numbers"),
             },
             Operator::Plus => match (left, right) {
                 (Value::Number(l), Value::Number(r)) => Value::Number(l + r),
                 (Value::String(l), Value::String(r)) => Value::String(l + &r),
-                _ => {
-                    // self.reporter.error("Operands must be two numbers or two strings", &operator);
-                    Value::Nil
-                }
+                _ => panic!("Operands must be numbers or strings"),
             },
             Operator::Slash => match (left, right) {
                 (Value::Number(l), Value::Number(r)) => Value::Number(l / r),
-                _ => {
-                    // self.reporter.error("Operands must be numbers", &operator);
-                    Value::Nil
-                }
+                _ => panic!("Operands must be numbers"),
             },
             Operator::Star => match (left, right) {
                 (Value::Number(l), Value::Number(r)) => Value::Number(l * r),
-                _ => {
-                    // self.reporter.error("Operands must be numbers", &operator);
-                    Value::Nil
-                }
+                _ => panic!("Operands must be numbers"),
             },
-            _ => {
-                // self.reporter.error("Invalid binary operator", &operator);
-                Value::Nil
-            }
+            _ => panic!("Invalid binary operator"),
         }
     }
 
@@ -82,18 +60,11 @@ impl Evaluator {
         let value = self.evaluate(*right);
         match operator {
             Operator::Bang => Value::Boolean(!self.is_truthy(value)),
-            Operator::Minus => {
-                if let Value::Number(n) = value {
-                    Value::Number(-n)
-                } else {
-                    // self.reporter.error("Operand must be a number", &operator);
-                    Value::Nil
-                }
-            }
-            _ => {
-                // self.reporter.error("Invalid unary operator", &operator);
-                Value::Nil
-            }
+            Operator::Minus => match value {
+                Value::Number(n) => Value::Number(-n),
+                _ => panic!("Operand must be a number"),
+            },
+            _ => panic!("Invalid unary operator"),
         }
     }
 
@@ -112,24 +83,6 @@ impl Evaluator {
             Value::Nil => false,
             _ => true,
         }
-    }
-
-    #[allow(dead_code)]
-    fn error(&mut self, message: &str) {
-        self.reporter.report(0, message.to_string());
-    }
-}
-
-impl Process for Evaluator {
-    type Input = Expr;
-    type Output = Value;
-
-    fn run(&mut self, input: Self::Input) -> Self::Output {
-        self.evaluate(input)
-    }
-
-    fn had_error(&self) -> bool {
-        self.reporter.had_error()
     }
 }
 
