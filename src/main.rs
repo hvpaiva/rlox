@@ -2,9 +2,9 @@ use std::env;
 use std::fs;
 use std::panic;
 use std::process;
-use std::process::exit;
-use std::sync::Arc;
 
+use evaluator::Evaluator;
+use parser::Parser;
 use scanner::Scanner;
 
 mod evaluator;
@@ -14,16 +14,12 @@ mod report;
 mod scanner;
 
 fn main() {
-    let default_hook = Arc::new(panic::take_hook());
-    let hook = Arc::clone(&default_hook);
-    panic::set_hook(Box::new(move |panic_info| {
-        hook(panic_info);
-        process::exit(70);
-    }));
+    setup_panic_hook();
 
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        eprintln!("Usage: {} tokenize <filename>", args[0]);
+        eprintln!("Usage: {} <command> <filename>", args[0]);
+        eprintln!("Commands: tokenize, parse, evaluate");
         return;
     }
 
@@ -33,52 +29,58 @@ fn main() {
     let file_contents = fs::read_to_string(filename).unwrap_or_default();
 
     match command.as_str() {
-        "tokenize" => {
-            let mut scanner = Scanner::new();
-            let tokens = scanner.run(file_contents);
-
-            for token in &tokens {
-                println!("{}", token);
-            }
-
-            exit(scanner.exit_code());
+        "tokenize" => tokenize(file_contents),
+        "parse" => parse(file_contents),
+        "evaluate" => evaluate(file_contents),
+        _ => {
+            eprintln!("Unknown command: {}", command);
+            process::exit(1);
         }
-        "parse" => {
-            let mut scanner = Scanner::new();
-            let tokens = scanner.run(file_contents);
-
-            if scanner.had_error() {
-                exit(scanner.exit_code());
-            }
-            let mut parser = parser::Parser::new();
-
-            if let Some(ast) = parser.run(tokens) {
-                println!("{}", ast);
-            }
-
-            exit(parser.exit_code());
-        }
-        "evaluate" => {
-            let mut scanner = Scanner::new();
-            let tokens = scanner.run(file_contents);
-            if scanner.had_error() {
-                exit(scanner.exit_code());
-            }
-
-            let mut parser = parser::Parser::new();
-            let mut evaluator = evaluator::Evaluator::new();
-            if let Some(ast) = parser.run(tokens) {
-                let result = evaluator.evaluate(ast);
-
-                println!("{}", result);
-            }
-
-            if parser.had_error() {
-                exit(parser.exit_code());
-            }
-        }
-        _ => eprintln!("Unknown command: {command}"),
     }
+}
+
+fn tokenize(contents: String) {
+    let mut scanner = Scanner::new();
+    let tokens = scanner.run(contents);
+
+    for token in &tokens {
+        println!("{}", token);
+    }
+
+    process::exit(scanner.exit_code());
+}
+
+fn parse(contents: String) {
+    let mut scanner = Scanner::new();
+    let tokens = scanner.run(contents);
+
+    if scanner.had_error() {
+        process::exit(scanner.exit_code());
+    }
+
+    let mut parser = Parser::new();
+    if let Some(ast) = parser.run(tokens) {
+        println!("{}", ast);
+    }
+
+    process::exit(parser.exit_code());
+}
+
+fn evaluate(contents: String) {
+    let mut scanner = Scanner::new();
+    let tokens = scanner.run(contents);
+    if scanner.had_error() {
+        process::exit(scanner.exit_code());
+    }
+
+    let mut parser = Parser::new();
+    if let Some(ast) = parser.run(tokens) {
+        let evaluator = Evaluator::new();
+        let result = evaluator.evaluate(&ast);
+        println!("{}", result);
+    }
+
+    process::exit(parser.exit_code());
 }
 
 pub trait Process {
@@ -96,4 +98,12 @@ pub trait Process {
             0
         }
     }
+}
+
+fn setup_panic_hook() {
+    let default_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |panic_info| {
+        default_hook(panic_info);
+        process::exit(70);
+    }));
 }

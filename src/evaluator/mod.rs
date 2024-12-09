@@ -1,92 +1,42 @@
-use core::panic;
-use std::{cmp::Ordering, fmt::Display};
+pub mod binary;
+pub mod literals;
+pub mod unary;
 
-use crate::parser::{Binary, Expr, Literal, Operator, Unary};
+use std::cmp::Ordering;
+use std::fmt::Display;
 
-pub struct Evaluator {}
+use crate::parser::Expr;
+use binary::BinaryEvaluator;
+use literals::LiteralEvaluator;
+use unary::UnaryEvaluator;
+
+#[derive(Debug)]
+pub struct Evaluator {
+    binary_evaluator: BinaryEvaluator,
+    unary_evaluator: UnaryEvaluator,
+    literal_evaluator: LiteralEvaluator,
+}
 
 impl Evaluator {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            binary_evaluator: BinaryEvaluator::new(),
+            unary_evaluator: UnaryEvaluator::new(),
+            literal_evaluator: LiteralEvaluator::new(),
+        }
     }
 
-    pub fn evaluate(&mut self, expr: Expr) -> Value {
+    pub fn evaluate(&self, expr: &Expr) -> Value {
         match expr {
-            Expr::Binary(binary) => self.evaluate_binary(*binary),
-            Expr::Unary(unary) => self.evaluate_unary(*unary),
-            Expr::Literal(literal) => self.evaluate_literal(literal),
-            Expr::Grouping(grouping) => self.evaluate(*grouping),
-        }
-    }
-
-    fn evaluate_binary(&mut self, binary: Binary) -> Value {
-        let Binary {
-            left,
-            operator,
-            right,
-        } = binary;
-        let left = self.evaluate(*left);
-        let right = self.evaluate(*right);
-        match operator {
-            Operator::BangEqual => Value::Boolean(left != right),
-            Operator::EqualEqual => Value::Boolean(left == right),
-            Operator::Greater => Value::Boolean(left > right),
-            Operator::GreaterEqual => Value::Boolean(left >= right),
-            Operator::Less => Value::Boolean(left < right),
-            Operator::LessEqual => Value::Boolean(left <= right),
-            Operator::Minus => match (left, right) {
-                (Value::Number(l), Value::Number(r)) => Value::Number(l - r),
-                _ => panic!("Operands must be numbers"),
-            },
-            Operator::Plus => match (left, right) {
-                (Value::Number(l), Value::Number(r)) => Value::Number(l + r),
-                (Value::String(l), Value::String(r)) => Value::String(l + &r),
-                _ => panic!("Operands must be numbers or strings"),
-            },
-            Operator::Slash => match (left, right) {
-                (Value::Number(l), Value::Number(r)) => Value::Number(l / r),
-                _ => panic!("Operands must be numbers"),
-            },
-            Operator::Star => match (left, right) {
-                (Value::Number(l), Value::Number(r)) => Value::Number(l * r),
-                _ => panic!("Operands must be numbers"),
-            },
-            _ => panic!("Invalid binary operator"),
-        }
-    }
-
-    fn evaluate_unary(&mut self, unary: Unary) -> Value {
-        let Unary { operator, right } = unary;
-        let value = self.evaluate(*right);
-        match operator {
-            Operator::Bang => Value::Boolean(!self.is_truthy(value)),
-            Operator::Minus => match value {
-                Value::Number(n) => Value::Number(-n),
-                _ => panic!("Operand must be a number"),
-            },
-            _ => panic!("Invalid unary operator"),
-        }
-    }
-
-    fn evaluate_literal(&mut self, literal: Literal) -> Value {
-        match literal {
-            Literal::Boolean(b) => Value::Boolean(b),
-            Literal::Number(n) => Value::Number(n),
-            Literal::String(s) => Value::String(s),
-            Literal::None => Value::Nil,
-        }
-    }
-
-    fn is_truthy(&self, value: Value) -> bool {
-        match value {
-            Value::Boolean(b) => b,
-            Value::Nil => false,
-            _ => true,
+            Expr::Binary(binary) => self.binary_evaluator.evaluate(binary),
+            Expr::Unary(unary) => self.unary_evaluator.evaluate(unary),
+            Expr::Literal(literal) => self.literal_evaluator.evaluate(literal),
+            Expr::Grouping(grouping) => self.evaluate(grouping),
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Number(f64),
     String(String),
