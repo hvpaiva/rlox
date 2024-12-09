@@ -4,6 +4,7 @@ use std::process::exit;
 
 use scanner::Scanner;
 
+mod evaluator;
 mod formatter;
 mod parser;
 mod report;
@@ -55,11 +56,18 @@ fn main() {
             }
 
             let mut parser = parser::Parser::new();
+            let mut evaluator = evaluator::Evaluator::new();
             if let Some(ast) = parser.run(tokens) {
-                println!("{}", ast);
+                let result = evaluator.run(ast);
+
+                println!("{}", result);
             }
 
-            exit(parser.exit_code());
+            if parser.had_error() {
+                exit(parser.exit_code());
+            }
+
+            exit(evaluator.exit_code());
         }
         _ => eprintln!("Unknown command: {command}"),
     }
