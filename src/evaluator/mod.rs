@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{cmp::Ordering, fmt::Display};
 
 use crate::{
     parser::{Binary, Expr, Literal, Operator, Unary},
@@ -167,14 +167,25 @@ impl PartialEq for Value {
 impl Eq for Value {}
 
 impl PartialOrd for Value {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 impl Ord for Value {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.partial_cmp(other)
-            .unwrap_or_else(|| panic!("Cannot compare different variants of Value"))
+    fn cmp(&self, other: &Self) -> Ordering {
+        use Value::*;
+        match (self, other) {
+            (Number(l), Number(r)) => l.partial_cmp(r).unwrap(),
+            (Number(_), _) => Ordering::Less,
+            (_, Number(_)) => Ordering::Greater,
+            (String(l), String(r)) => l.cmp(r),
+            (String(_), _) => Ordering::Less,
+            (_, String(_)) => Ordering::Greater,
+            (Boolean(l), Boolean(r)) => l.cmp(r),
+            (Boolean(_), _) => Ordering::Less,
+            (_, Boolean(_)) => Ordering::Greater,
+            (Nil, Nil) => Ordering::Equal,
+        }
     }
 }
