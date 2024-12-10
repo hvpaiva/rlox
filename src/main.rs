@@ -1,86 +1,78 @@
-use std::env;
 use std::fs;
-use std::panic;
-use std::process;
+use std::path::PathBuf;
 
-use evaluator::Evaluator;
-use parser::Parser;
-use scanner::Scanner;
+use clap::{Parser, Subcommand};
+use miette::{IntoDiagnostic, WrapErr};
 
-mod evaluator;
-mod formatter;
-mod parser;
-mod report;
-mod scanner;
+use codecrafters_interpreter as rlox;
 
-fn main() {
-    setup_panic_hook();
+#[derive(Parser, Debug)]
+#[command(version, about, long_about)]
+struct Args {
+    #[clap(subcommand)]
+    command: Command,
+}
 
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        eprintln!("Usage: {} <command> <filename>", args[0]);
-        eprintln!("Commands: tokenize, parse, evaluate");
-        return;
-    }
+#[derive(Subcommand, Debug)]
+enum Command {
+    Tokenize { filename: PathBuf },
+    Parse { filename: PathBuf },
+    Evaluate { filename: PathBuf },
+}
 
-    let command = &args[1];
-    let filename = &args[2];
+fn main() -> miette::Result<()> {
+    let args = Args::parse();
 
-    let file_contents = fs::read_to_string(filename).unwrap_or_default();
+    match args.command {
+        Command::Tokenize { filename } => {
+            let mut any_cc_err = false;
 
-    match command.as_str() {
-        "tokenize" => tokenize(file_contents),
-        "parse" => parse(file_contents),
-        "evaluate" => evaluate(file_contents),
-        _ => {
-            eprintln!("Unknown command: {}", command);
-            process::exit(1);
+            let file_contents = read_file(filename)?;
+
+            for token in rlox::Lexer::new(&file_contents) {
+                let token = match token {
+                    Ok(t) => t,
+                    Err(e) => {
+                        eprintln!("{e:?}");
+                        if let Some(unrecognized) =
+                            e.downcast_ref::<rlox::lexer::errors::SingleTokenError>()
+                        {
+                            any_cc_err = true;
+                            eprintln!(
+                                "[line {}] Error: Unexpected character: {}",
+                                unrecognized.line(),
+                                unrecognized.token
+                            );
+                        } else if let Some(unterminated) =
+                            e.downcast_ref::<rlox::lexer::errors::StringTerminationError>()
+                        {
+                            any_cc_err = true;
+                            eprintln!("[line {}] Error: Unterminated string.", unterminated.line(),);
+                        }
+                        continue;
+                    }
+                };
+                println!("{token}");
+            }
+            println!("EOF  null");
+
+            if any_cc_err {
+                std::process::exit(65);
+            }
         }
+        Command::Parse { filename: _ } => todo!(),
+        Command::Evaluate { filename: _ } => todo!(),
     }
+
+    Ok(())
 }
 
-fn tokenize(contents: String) {
-    let mut scanner = Scanner::new();
-    let tokens = scanner.run(contents);
+fn read_file(filename: PathBuf) -> Result<String, miette::Error> {
+    let file_contents = fs::read_to_string(&filename)
+        .into_diagnostic()
+        .wrap_err_with(|| format!("reading '{}' failed", filename.display()))?;
 
-    for token in &tokens {
-        println!("{}", token);
-    }
-
-    process::exit(scanner.exit_code());
-}
-
-fn parse(contents: String) {
-    let mut scanner = Scanner::new();
-    let tokens = scanner.run(contents);
-
-    if scanner.had_error() {
-        process::exit(scanner.exit_code());
-    }
-
-    let mut parser = Parser::new();
-    if let Some(ast) = parser.run(tokens) {
-        println!("{}", ast);
-    }
-
-    process::exit(parser.exit_code());
-}
-
-fn evaluate(contents: String) {
-    let mut scanner = Scanner::new();
-    let tokens = scanner.run(contents);
-    if scanner.had_error() {
-        process::exit(scanner.exit_code());
-    }
-
-    let mut parser = Parser::new();
-    if let Some(ast) = parser.run(tokens) {
-        let evaluator = Evaluator::new();
-        let result = evaluator.evaluate(&ast);
-        println!("{}", result);
-    }
-
-    process::exit(parser.exit_code());
+    Ok(file_contents)
 }
 
 pub trait Process {
@@ -98,12 +90,4 @@ pub trait Process {
             0
         }
     }
-}
-
-fn setup_panic_hook() {
-    let default_hook = panic::take_hook();
-    panic::set_hook(Box::new(move |panic_info| {
-        default_hook(panic_info);
-        process::exit(70);
-    }));
 }
